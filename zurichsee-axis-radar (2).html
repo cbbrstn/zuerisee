@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>⛵ Seeüberquerung — Utoquai to Enge frei?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-bg:     #0d3320;
+      --green-border: #16a34a;
+      --green-dot:    #22c55e;
+      --green-text:   #4ade80;
+      --yellow-bg:    #2d2500;
+      --yellow-border:#ca8a04;
+      --yellow-dot:   #eab308;
+      --yellow-text:  #fde047;
+      --red-bg:       #2d0a0a;
+      --red-border:   #dc2626;
+      --red-dot:      #ef4444;
+      --red-text:     #f87171;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #070d1a;
+      background-image:
+        radial-gradient(ellipse at 20% 0%, rgba(14,50,90,0.6) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(5,30,60,0.5) 0%, transparent 55%);
+      font-family: 'DM Mono', 'Courier New', monospace;
+      color: #c8d8e8;
+      padding-bottom: 60px;
+    }
+
+    header {
+      border-bottom: 1px solid rgba(100,150,200,0.15);
+      padding: 28px 32px 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .title-block { flex: 1; min-width: 240px; }
+    h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.04em; color: #e0edf8; line-height: 1.2; }
+    .subtitle { font-size: 11px; color: #5a8ab0; margin-top: 6px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .axis-label {
+      display: inline-block; margin-top: 10px;
+      background: rgba(30,80,140,0.3); border: 1px solid rgba(60,120,200,0.3);
+      border-radius: 4px; padding: 4px 10px; font-size: 11px; color: #7ab4d8; letter-spacing: 0.06em;
+    }
+
+    .controls { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+    .control-group { display: flex; flex-direction: column; gap: 6px; }
+    .control-label { font-size: 10px; color: #4a7a9b; letter-spacing: 0.12em; text-transform: uppercase; }
+
+    select {
+      background: rgba(10,25,50,0.8);
+      border: 1px solid rgba(60,120,200,0.35);
+      border-radius: 6px; color: #c8d8e8;
+      padding: 8px 28px 8px 12px; font-size: 14px; font-family: inherit;
+      cursor: pointer; outline: none; min-width: 110px;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a8ab0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center;
+    }
+    select option { background: #0a1830; }
+    #date-select { min-width: 200px; }
+
+    button#fetch-btn {
+      background: rgba(20,60,120,0.6); border: 1px solid rgba(80,150,220,0.5);
+      border-radius: 6px; color: #9fccee; padding: 8px 20px;
+      font-size: 13px; font-family: inherit; cursor: pointer;
+      letter-spacing: 0.08em; transition: background 0.18s, border-color 0.18s; align-self: flex-end;
+    }
+    button#fetch-btn:hover { background: rgba(30,80,160,0.7); border-color: rgba(100,180,255,0.6); }
+    button#fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    main { padding: 28px 32px; }
+
+    /* ── Boat counter ────────────────────────────────────── */
+    #boat-counter {
+      display: none;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+      padding: 14px 20px;
+      background: rgba(10,30,65,0.6);
+      border: 1px solid rgba(60,120,200,0.3);
+      border-radius: 10px;
+      flex-wrap: wrap;
+    }
+    .counter-item { display: flex; flex-direction: column; gap: 3px; }
+    .counter-val { font-size: 26px; font-weight: 700; color: #e0edf8; letter-spacing: -0.02em; line-height: 1; }
+    .counter-label { font-size: 10px; color: #4a7a9b; letter-spacing: 0.1em; text-transform: uppercase; }
+    .counter-divider { width: 1px; height: 36px; background: rgba(60,120,200,0.2); flex-shrink: 0; }
+    .counter-red    { color: var(--red-text); }
+    .counter-yellow { color: var(--yellow-text); }
+    .counter-green  { color: var(--green-text); }
+
+    /* ── Legend ─────────────────────────────────────────── */
+    .legend { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: 0.08em; }
+    .legend-item.green  { color: var(--green-text); }
+    .legend-item.yellow { color: var(--yellow-text); }
+    .legend-item.red    { color: var(--red-text); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .legend-item.green  .legend-dot { background: var(--green-dot);  box-shadow: 0 0 6px var(--green-dot); }
+    .legend-item.yellow .legend-dot { background: var(--yellow-dot); box-shadow: 0 0 6px var(--yellow-dot); }
+    .legend-item.red    .legend-dot { background: var(--red-dot);    box-shadow: 0 0 6px var(--red-dot); }
+
+    /* ── Status bar ─────────────────────────────────────── */
+    #status-bar { font-size: 11px; color: #3a6a8a; margin-bottom: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    #status-bar .dim { color: #1d4a6a; }
+
+    /* ── Error / Loading ─────────────────────────────────── */
+    #error-box {
+      display: none; margin-bottom: 20px; padding: 14px 18px;
+      background: rgba(100,0,0,0.3); border: 1px solid rgba(200,50,50,0.4);
+      border-radius: 8px; font-size: 12px; color: #f87171; line-height: 1.7;
+    }
+    #loading-box { display: none; align-items: center; gap: 12px; padding: 40px 0; color: #3a6a9a; font-size: 14px; }
+    .pulse { animation: pulse 1s infinite; display: inline-block; }
+
+    /* ── Grid ───────────────────────────────────────────── */
+    #grid { display: flex; flex-direction: column; gap: 6px; }
+    .slot-row {
+      display: flex; align-items: stretch; border-radius: 8px; overflow: hidden;
+      animation: fadeIn 0.25s ease both; transition: filter 0.15s;
+    }
+    .slot-row:hover { filter: brightness(1.09); }
+    .slot-row.green  { border: 1px solid var(--green-border);  background: var(--green-bg); }
+    .slot-row.yellow { border: 1px solid var(--yellow-border); background: var(--yellow-bg); }
+    .slot-row.red    { border: 1px solid var(--red-border);    background: var(--red-bg); }
+
+    .slot-time {
+      padding: 10px 16px; font-size: 13px; font-weight: 700; letter-spacing: 0.05em;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      min-width: 145px; display: flex; align-items: center;
+      color: #8bb8d8; background: rgba(0,0,0,0.15); flex-shrink: 0;
+    }
+    .slot-indicator {
+      padding: 10px 14px; display: flex; align-items: center; gap: 8px;
+      min-width: 120px; border-right: 1px solid rgba(255,255,255,0.06); flex-shrink: 0;
+    }
+    .slot-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .slot-row.green  .slot-dot { background: var(--green-dot);  box-shadow: 0 0 8px var(--green-dot); }
+    .slot-row.yellow .slot-dot { background: var(--yellow-dot); box-shadow: 0 0 8px var(--yellow-dot); }
+    .slot-row.red    .slot-dot { background: var(--red-dot);    box-shadow: 0 0 8px var(--red-dot); }
+    .slot-status-text { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; }
+    .slot-row.green  .slot-status-text { color: var(--green-text); }
+    .slot-row.yellow .slot-status-text { color: var(--yellow-text); }
+    .slot-row.red    .slot-status-text { color: var(--red-text); }
+
+    .boat-list { display: flex; align-items: center; gap: 8px; padding: 8px 14px; flex-wrap: wrap; flex: 1; }
+    .boat-chip {
+      border-radius: 4px; padding: 2px 8px; font-size: 11px; font-family: inherit;
+      letter-spacing: 0.04em; cursor: default; background: rgba(255,255,255,0.05); transition: filter 0.15s;
+    }
+    .boat-chip:hover { filter: brightness(1.25); }
+    .slot-row.green  .boat-chip { border: 1px solid var(--green-border);  color: var(--green-text); }
+    .slot-row.yellow .boat-chip { border: 1px solid var(--yellow-border); color: var(--yellow-text); }
+    .slot-row.red    .boat-chip { border: 1px solid var(--red-border);    color: var(--red-text); }
+    .empty-note { font-size: 11px; color: rgba(100,140,170,0.45); font-style: italic; }
+
+    /* ── Debug panel ─────────────────────────────────────── */
+    #debug-toggle {
+      margin-top: 24px; display: flex; align-items: center; gap: 10px;
+      font-size: 11px; color: #2a5a7a; cursor: pointer; user-select: none;
+    }
+    #debug-toggle:hover { color: #4a8aaa; }
+    #debug-panel {
+      display: none; margin-top: 10px; padding: 14px 16px;
+      background: rgba(5,15,35,0.9); border: 1px solid rgba(40,80,130,0.4);
+      border-radius: 8px; font-size: 11px; color: #3a7a9a; line-height: 1.7;
+      max-height: 340px; overflow-y: auto;
+    }
+    #debug-panel .raw-entry { border-bottom: 1px solid rgba(40,80,130,0.15); padding: 3px 0; }
+    #debug-panel .raw-entry:last-child { border-bottom: none; }
+    .ok   { color: #4ade80; }
+    .warn { color: #fde047; }
+    .err  { color: #f87171; }
+
+    /* ── Note ───────────────────────────────────────────── */
+    .note {
+      margin-top: 24px; padding: 14px 18px;
+      background: rgba(10,30,60,0.4); border: 1px solid rgba(40,80,140,0.3);
+      border-radius: 8px; font-size: 11px; color: #4a7a9b; line-height: 1.7; letter-spacing: 0.03em;
+    }
+    .note strong { color: #5a9abf; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    @keyframes pulse  { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    @media (max-width: 600px) {
+      header, main { padding: 20px 16px; }
+      .slot-time { min-width: 110px; font-size: 11px; padding: 8px 10px; }
+      .slot-indicator { min-width: 90px; padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="title-block">
+    <h1>⛵ Seeüberquerung — Utoquai to Enge frei?</h1>
+    <div class="subtitle">ZSG Public Boat Crossing Forecast</div>
+    <div class="axis-label">📍 Axis: Badi Utoquai ↔ Seebad Enge</div>
+  </div>
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">Date</span>
+      <select id="date-select"></select>
+    </div>
+    <div class="control-group">
+      <span class="control-label">From</span>
+      <select id="start-select"></select>
+    </div>
+    <div class="control-group">
+      <span class="control-label">Until</span>
+      <select id="end-select"></select>
+    </div>
+    <button id="fetch-btn">Fetch Schedule</button>
+  </div>
+</header>
+
+<main>
+  <!-- ── Boat counter ── -->
+  <div id="boat-counter">
+    <div class="counter-item">
+      <span class="counter-val" id="cnt-total">0</span>
+      <span class="counter-label">Boats in window</span>
+    </div>
+    <div class="counter-divider"></div>
+    <div class="counter-item">
+      <span class="counter-val counter-red" id="cnt-red">0</span>
+      <span class="counter-label">🔴 Red slots</span>
+    </div>
+    <div class="counter-item">
+      <span class="counter-val counter-yellow" id="cnt-yellow">0</span>
+      <span class="counter-label">🟡 Yellow slots</span>
+    </div>
+    <div class="counter-item">
+      <span class="counter-val counter-green" id="cnt-green">0</span>
+      <span class="counter-label">🟢 Green slots</span>
+    </div>
+    <div class="counter-divider"></div>
+    <div class="counter-item">
+      <span class="counter-val" id="cnt-raw" style="font-size:13px;color:#4a7a9b;line-height:1.3">—</span>
+      <span class="counter-label">Raw from API</span>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item red">   <div class="legend-dot"></div><span>CROSSING — boat confirmed in window</span></div>
+    <div class="legend-item yellow"><div class="legend-dot"></div><span>POSSIBLE — boat within ±5 min of boundary</span></div>
+    <div class="legend-item green"> <div class="legend-dot"></div><span>CLEAR — no boat expected</span></div>
+  </div>
+
+  <div id="status-bar"></div>
+  <div id="error-box"></div>
+  <div id="loading-box"><span class="pulse">⛵</span>&nbsp;&nbsp;Fetching ZSG departure board from Bürkliplatz…</div>
+  <div id="grid"></div>
+
+  <div id="debug-toggle" onclick="toggleDebug()">
+    <span id="debug-arrow">▶</span>&nbsp;Show raw API debug log
+  </div>
+  <div id="debug-panel"></div>
+
+  <div class="note">
+    <strong>How this works:</strong> All ZSG boats serving the main lake routes depart from and return to
+    Zürich Bürkliplatz (See). The Utoquai–Seebad Enge axis lies ~4 minutes travel from Bürkliplatz, so every
+    departure crosses the axis outbound ~4 min after leaving, and every arrival crosses it ~4 min before docking.
+    Both departure and arrival stationboards are queried from <strong>transport.opendata.ch</strong>.<br><br>
+    <strong>RED</strong> = boat crosses within this 15-min window. &nbsp;
+    <strong>YELLOW</strong> = boat within ±5 min of the window edge (delay buffer). &nbsp;
+    <strong>GREEN</strong> = clear. &nbsp;
+    Hover chips for scheduled vs prognosis times. Open the debug log to inspect raw API results.
+  </div>
+</main>
+
+<script>
+// ── Constants ─────────────────────────────────────────────────────────────────
+const STATION_NAME         = "Zürich, Bürkliplatz (See)";
+const AXIS_TRANSIT_MINUTES = 4;
+const BUFFER_MIN           = 5;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const padZ        = n => String(n).padStart(2, "0");
+const toHHMM      = d => `${padZ(d.getHours())}:${padZ(d.getMinutes())}`;
+const addMinutes  = (d, n) => new Date(d.getTime() + n * 60000);
+const floorTo15   = date => { const d = new Date(date); d.setMinutes(Math.floor(d.getMinutes()/15)*15,0,0); return d; };
+const parseApiTs  = str => str ? new Date(str) : null;
+
+const slotLabel = date => `${toHHMM(date)} – ${toHHMM(addMinutes(date, 15))}`;
+
+// ── DOM setup ─────────────────────────────────────────────────────────────────
+const now = new Date();
+const DAY_NAMES   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const dateSelect = document.getElementById("date-select");
+for (let i = 0; i < 7; i++) {
+  const d = new Date(now);
+  d.setDate(d.getDate() + i);
+  const val   = `${d.getFullYear()}-${padZ(d.getMonth()+1)}-${padZ(d.getDate())}`;
+  const label = i === 0 ? `Today (${DAY_NAMES[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]})`
+              : i === 1 ? `Tomorrow (${DAY_NAMES[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]})`
+              :           `${DAY_NAMES[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
+  dateSelect.appendChild(new Option(label, val));
+}
+
+const startSelect  = document.getElementById("start-select");
+const endSelect    = document.getElementById("end-select");
+const defaultStart = toHHMM(floorTo15(now));
+const defaultEnd   = toHHMM(addMinutes(floorTo15(now), 120));
+for (let h = 6; h <= 22; h++) {
+  for (let m = 0; m < 60; m += 15) {
+    const val = `${padZ(h)}:${padZ(m)}`;
+    startSelect.appendChild(new Option(val, val, val === defaultStart, val === defaultStart));
+    endSelect.appendChild(  new Option(val, val, val === defaultEnd,   val === defaultEnd));
+  }
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+function buildUrl(stationName, datetimeObj, type, limit) {
+  const dateStr = `${datetimeObj.getFullYear()}-${padZ(datetimeObj.getMonth()+1)}-${padZ(datetimeObj.getDate())}`;
+  const timeStr = `${padZ(datetimeObj.getHours())}:${padZ(datetimeObj.getMinutes())}`;
+  // Use %20 for space in datetime (+ is also valid but %20 is unambiguous)
+  return `https://transport.opendata.ch/v1/stationboard`
+    + `?station=${encodeURIComponent(stationName)}`
+    + `&datetime=${dateStr}%20${timeStr}`
+    + `&transportations[]=ship`
+    + `&limit=${limit}`
+    + `&type=${type}`;
+}
+
+async function fetchBoard(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── Processing ────────────────────────────────────────────────────────────────
+function extractCrossings(depEntries, arrEntries, log) {
+  const crossings = [];
+
+  for (const e of depEntries) {
+    // Departure stationboard: stop.departure is when the boat leaves Bürkliplatz
+    const ts    = e.stop?.departure;
+    const tsProg = e.stop?.prognosis?.departure;
+    if (!ts) { log.push(`<span class="warn">DEP skip — no departure timestamp: ${e.name}</span>`); continue; }
+    const t    = parseApiTs(ts);
+    const tP   = tsProg ? parseApiTs(tsProg) : null;
+    if (!t || isNaN(t)) { log.push(`<span class="warn">DEP skip — unparseable ts: ${ts}</span>`); continue; }
+    const crossMs = addMinutes(t,  AXIS_TRANSIT_MINUTES).getTime();
+    const progMs  = tP ? addMinutes(tP, AXIS_TRANSIT_MINUTES).getTime() : null;
+    crossings.push({ crossingMs: crossMs, prognosis: progMs, direction: "out",
+      boat: e.name || "ZSG", to: e.to || "—", scheduledHHMM: toHHMM(t), progHHMM: tP ? toHHMM(tP) : null });
+    log.push(`<span class="ok">DEP ✓</span> departs ${toHHMM(t)}${tP ? " (prog "+toHHMM(tP)+")" : ""} → <strong style="color:#c8d8e8">${e.name || "?"}</strong> → ${e.to || "?"} | axis ~${toHHMM(new Date(crossMs))}`);
+  }
+
+  for (const e of arrEntries) {
+    // Arrival stationboard: stop.arrival is when the boat arrives at Bürkliplatz
+    // Note: some APIs use stop.departure even for arrivals — check both
+    const ts    = e.stop?.arrival || e.stop?.departure;
+    const tsProg = e.stop?.prognosis?.arrival || e.stop?.prognosis?.departure;
+    if (!ts) { log.push(`<span class="warn">ARR skip — no arrival timestamp: ${e.name}</span>`); continue; }
+    const t    = parseApiTs(ts);
+    const tP   = tsProg ? parseApiTs(tsProg) : null;
+    if (!t || isNaN(t)) { log.push(`<span class="warn">ARR skip — unparseable ts: ${ts}</span>`); continue; }
+    const crossMs = addMinutes(t, -AXIS_TRANSIT_MINUTES).getTime();
+    const progMs  = tP ? addMinutes(tP, -AXIS_TRANSIT_MINUTES).getTime() : null;
+    const from    = e.stop?.station?.name || "lake";
+    crossings.push({ crossingMs: crossMs, prognosis: progMs, direction: "in",
+      boat: e.name || "ZSG", from, to: "Bürkliplatz", scheduledHHMM: toHHMM(t), progHHMM: tP ? toHHMM(tP) : null });
+    log.push(`<span class="ok">ARR ✓</span> arrives ${toHHMM(t)}${tP ? " (prog "+toHHMM(tP)+")" : ""} ← <strong style="color:#c8d8e8">${e.name || "?"}</strong> from ${from} | axis ~${toHHMM(new Date(crossMs))}`);
+  }
+
+  return crossings;
+}
+
+function dedup(crossings, log) {
+  const uniq = [];
+  for (const c of crossings) {
+    const dup = uniq.find(u => u.direction === c.direction && Math.abs(u.crossingMs - c.crossingMs) < 90000);
+    if (dup) { log.push(`<span class="warn">DEDUP: removed duplicate ${c.boat} ${c.direction} ~${toHHMM(new Date(c.crossingMs))}</span>`); }
+    else uniq.push(c);
+  }
+  return uniq;
+}
+
+function slotStatus(slotStartMs, crossings) {
+  const e = slotStartMs + 15 * 60000;
+  for (const c of crossings) {
+    const eff = c.prognosis ?? c.crossingMs;
+    if (eff >= slotStartMs && eff < e) return "red";
+  }
+  const buf = BUFFER_MIN * 60000;
+  for (const c of crossings) {
+    const eff = c.prognosis ?? c.crossingMs;
+    if (eff >= slotStartMs - buf && eff < e + buf) return "yellow";
+  }
+  return "green";
+}
+
+function buildSlots(startDt, endDt, crossings) {
+  const slots = [];
+  let cur = floorTo15(new Date(startDt));
+  while (cur < endDt) {
+    const sMs  = cur.getTime();
+    const eMs  = sMs + 15 * 60000;
+    const buf  = BUFFER_MIN * 60000;
+    const status = slotStatus(sMs, crossings);
+    const windowBoats = crossings.filter(c => { const ef = c.prognosis ?? c.crossingMs; return ef >= sMs && ef < eMs; });
+    const bufferBoats = crossings.filter(c => { const ef = c.prognosis ?? c.crossingMs; return (ef >= sMs-buf && ef < sMs) || (ef >= eMs && ef < eMs+buf); });
+    slots.push({ slotStart: new Date(cur), status, windowBoats, bufferBoats });
+    cur = addMinutes(cur, 15);
+  }
+  return slots;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+const STATUS_LABEL = { green: "CLEAR", yellow: "POSSIBLE", red: "CROSSING" };
+
+function renderSlots(slots, crossingsInWindow) {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+
+  const nRed    = slots.filter(s => s.status === "red").length;
+  const nYellow = slots.filter(s => s.status === "yellow").length;
+  const nGreen  = slots.filter(s => s.status === "green").length;
+  document.getElementById("cnt-total").textContent  = crossingsInWindow;
+  document.getElementById("cnt-red").textContent    = nRed;
+  document.getElementById("cnt-yellow").textContent = nYellow;
+  document.getElementById("cnt-green").textContent  = nGreen;
+  document.getElementById("boat-counter").style.display = "flex";
+
+  if (!slots.length) {
+    grid.innerHTML = `<div style="color:#3a6a8a;font-size:13px;padding:20px 0">No slots — adjust the time range.</div>`;
+    return;
+  }
+
+  slots.forEach(({ slotStart, status, windowBoats, bufferBoats }, idx) => {
+    const displayBoats = status === "red" ? windowBoats : status === "yellow" ? bufferBoats.slice(0,4) : [];
+
+    const row = document.createElement("div");
+    row.className = `slot-row ${status}`;
+    row.style.animationDelay = `${idx * 0.025}s`;
+
+    const timeCell = document.createElement("div");
+    timeCell.className = "slot-time";
+    timeCell.textContent = slotLabel(slotStart);
+    row.appendChild(timeCell);
+
+    const indCell = document.createElement("div");
+    indCell.className = "slot-indicator";
+    indCell.innerHTML = `<div class="slot-dot"></div><span class="slot-status-text">${STATUS_LABEL[status]}</span>`;
+    row.appendChild(indCell);
+
+    const boatCell = document.createElement("div");
+    boatCell.className = "boat-list";
+    if (!displayBoats.length) {
+      const note = document.createElement("span");
+      note.className = "empty-note";
+      note.textContent = status === "green" ? "no scheduled crossings" : "";
+      boatCell.appendChild(note);
+    } else {
+      displayBoats.forEach(b => {
+        const crossTime = new Date(b.prognosis ?? b.crossingMs);
+        const arrow = b.direction === "out" ? "→" : "←";
+        const dest  = b.direction === "out" ? b.to : (b.from || "lake");
+        const chip  = document.createElement("span");
+        chip.className = "boat-chip";
+        chip.textContent = `${b.boat} ${arrow} ${dest} (~${toHHMM(crossTime)})`;
+        chip.title = `Direction: ${b.direction === "out" ? "outbound" : "inbound"}\nScheduled: ${b.scheduledHHMM}${b.progHHMM ? "\nPrognosis: "+b.progHHMM : ""}`;
+        boatCell.appendChild(chip);
+      });
+    }
+    row.appendChild(boatCell);
+    grid.appendChild(row);
+  });
+}
+
+function setLoading(on) {
+  document.getElementById("loading-box").style.display = on ? "flex" : "none";
+  document.getElementById("grid").style.display        = on ? "none"  : "flex";
+  document.getElementById("fetch-btn").disabled        = on;
+  document.getElementById("fetch-btn").textContent     = on ? "Loading…" : "Fetch Schedule";
+}
+
+function showError(msg) {
+  const box = document.getElementById("error-box");
+  if (msg) {
+    box.style.display = "block";
+    box.innerHTML = `⚠ <strong>Fetch error:</strong> ${msg}<br>
+      <span style="color:#f87171aa">Check the debug log below — the URLs are clickable so you can inspect the raw API response in a new tab.</span>`;
+  } else { box.style.display = "none"; }
+}
+
+function setStatusBar(total, rawDep, rawArr, stationName, fetchTime) {
+  document.getElementById("cnt-raw").innerHTML = `${rawDep} dep<br>${rawArr} arr`;
+  document.getElementById("status-bar").innerHTML = `
+    <span>Fetched ${fetchTime.toLocaleTimeString("de-CH")}</span>
+    <span>·</span>
+    <span>${total} total crossings parsed (dep + arr)</span>
+    ${stationName ? `<span>·</span><span class="dim">${stationName}</span>` : ""}
+  `;
+}
+
+function setDebugPanel(log, depUrl, arrUrl) {
+  document.getElementById("debug-panel").innerHTML = `
+    <div class="raw-entry"><strong style="color:#5a9abf">Departure URL (click to open):</strong><br>
+      <a href="${depUrl}" target="_blank" style="color:#3a7aaa;word-break:break-all">${depUrl}</a></div>
+    <div class="raw-entry"><strong style="color:#5a9abf">Arrival URL (click to open):</strong><br>
+      <a href="${arrUrl}" target="_blank" style="color:#3a7aaa;word-break:break-all">${arrUrl}</a></div>
+    <div class="raw-entry" style="margin-top:6px;color:#5a9abf">Parsed log (${log.length} entries):</div>
+    ${log.length ? log.map(l => `<div class="raw-entry">${l}</div>`).join("") :
+      '<div class="raw-entry err">No entries — the API may have returned 0 results. Open URLs above to verify.</div>'}
+  `;
+}
+
+let debugVisible = false;
+function toggleDebug() {
+  debugVisible = !debugVisible;
+  document.getElementById("debug-panel").style.display = debugVisible ? "block" : "none";
+  document.getElementById("debug-arrow").textContent   = debugVisible ? "▼" : "▶";
+}
+
+// ── Fetch & run ───────────────────────────────────────────────────────────────
+async function fetchData() {
+  setLoading(true);
+  showError(null);
+  document.getElementById("boat-counter").style.display = "none";
+  document.getElementById("status-bar").innerHTML = "";
+
+  const dateVal  = dateSelect.value;
+  const startVal = startSelect.value;
+  const endVal   = endSelect.value;
+  const [sy, smo, sd] = dateVal.split("-").map(Number);
+  const [sh, sm]      = startVal.split(":").map(Number);
+  const [eh, em]      = endVal.split(":").map(Number);
+
+  // Start fetching from 1h before window (so boats that departed before the window are included)
+  const fetchFrom = new Date(sy, smo-1, sd, Math.max(sh-1, 0), 0, 0, 0);
+
+  const depUrl = buildUrl(STATION_NAME, fetchFrom, "departure", 80);
+  const arrUrl = buildUrl(STATION_NAME, fetchFrom, "arrival",   80);
+
+  const log = [];
+
+  try {
+    log.push(`Querying station: <strong style="color:#c8d8e8">${STATION_NAME}</strong>`);
+    log.push(`Fetch from: ${fetchFrom.toLocaleTimeString("de-CH")} on ${dateVal}`);
+
+    const [depData, arrData] = await Promise.all([
+      fetchBoard(depUrl),
+      fetchBoard(arrUrl),
+    ]);
+
+    const depEntries = depData.stationboard || [];
+    const arrEntries = arrData.stationboard || [];
+    const resolvedStation = depData.station?.name || arrData.station?.name;
+
+    log.push(`<span class="ok">API OK</span> — ${depEntries.length} departures, ${arrEntries.length} arrivals returned`);
+    if (resolvedStation) log.push(`Station resolved: <strong style="color:#c8d8e8">${resolvedStation}</strong> (id: ${depData.station?.id})`);
+    else log.push(`<span class="warn">Station not resolved — check spelling</span>`);
+    log.push("─────────────────────────────");
+
+    const raw     = extractCrossings(depEntries, arrEntries, log);
+    const unique  = dedup(raw, log);
+    log.push(`─────────────────────────────`);
+    log.push(`Total unique crossings: <strong style="color:#c8d8e8">${unique.length}</strong>`);
+
+    const startDt = new Date(sy, smo-1, sd, sh, sm, 0, 0);
+    const endDt   = new Date(sy, smo-1, sd, eh, em, 0, 0);
+    const slots   = buildSlots(startDt, endDt, unique);
+
+    const inWindow = unique.filter(c => {
+      const eff = c.prognosis ?? c.crossingMs;
+      return eff >= startDt.getTime() && eff < endDt.getTime();
+    }).length;
+
+    setStatusBar(unique.length, depEntries.length, arrEntries.length, resolvedStation, new Date());
+    setDebugPanel(log, depUrl, arrUrl);
+    renderSlots(slots, inWindow);
+
+  } catch (err) {
+    log.push(`<span class="err">FETCH ERROR: ${err.message}</span>`);
+    setDebugPanel(log, depUrl, arrUrl);
+    showError(err.message);
+    document.getElementById("grid").innerHTML = "";
+  } finally {
+    setLoading(false);
+  }
+}
+
+document.getElementById("fetch-btn").addEventListener("click", fetchData);
+fetchData();
+</script>
+</body>
+</html>
